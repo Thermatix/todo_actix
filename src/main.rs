@@ -1,15 +1,13 @@
-use actix_web::{HttpServer, App, web, Responder};
+use actix_web::{HttpServer, App, web};
 use dotenv::dotenv;
+use tokio_postgres::NoTls;
 
 use std::io;
 
 mod models;
 mod config;
-
-async fn status() -> impl Responder {
-    web::HttpResponse::Ok()
-        .json(models::Status::new("UP"))
-}
+mod handlers;
+mod db;
 
 #[actix_rt::main]
 async fn main() -> io::Result<()> {
@@ -18,12 +16,17 @@ async fn main() -> io::Result<()> {
 
     let config = config::Config::from_env().unwrap();
 
+    let pool = config.pg.create_pool(NoTls).unwrap();
+
     println!("Starting server at \"http://{}:{}/\"...", config.server.host, config.server.port);
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
 
         App::new()
-            .route("/", web::get().to(status))
+            .data(pool.clone())
+            .route("/", web::get().to(handlers::status))
+            .route("/todos{_:/?}", web::get().to(handlers::get_todos))
+            .route("/todos/{list_id}/items{_:/?}", web::get().to(handlers::get_todo_items))
 
     })
     .bind(format!("{}:{}", config.server.host, config.server.port))?
