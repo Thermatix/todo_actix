@@ -43,3 +43,20 @@ pub async fn get_todo_items(client: &Client, list_id: i32) -> Result<Vec<TodoIte
                       .collect::<Vec<TodoItems>>();
     Ok(items)
 }
+
+
+
+pub async fn check_todo_item(client: &Client, list_id: i32, item_id: i32)
+    -> Result<(), io::Error> {
+
+    let statement = client.prepare("UPDATE todo_items SET checked = NOT checked WHERE list_id = $1 AND id = $2").await.unwrap();
+
+    let result = client.execute(&statement, &[&list_id, &item_id])
+                        .await
+                        .expect("Error checking todo item");
+
+    match result {
+        ref updated if *updated == 1 => Ok(()),
+        _ => Err(io::Error::new(io::ErrorKind::Other, "Failed to check the item"))
+    }
+}
