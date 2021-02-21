@@ -4,7 +4,7 @@ use dotenv::dotenv;
 use std::io;
 
 mod models;
-mod app_config;
+mod config;
 
 async fn status() -> impl Responder {
     web::HttpResponse::Ok()
@@ -16,7 +16,7 @@ async fn main() -> io::Result<()> {
 
     dotenv().ok();
 
-    let config = app_config::Config::from_env().unwrap();
+    let config = config::Config::from_env().unwrap();
 
     println!("Starting server at \"http://{}:{}/\"...", config.server.host, config.server.port);
 
